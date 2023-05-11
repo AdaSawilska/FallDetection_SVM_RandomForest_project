@@ -2,10 +2,29 @@ import numpy as np
 import pandas as pd
 import glob
 
+
 # reads the csv files to dataFrame
 def readCSVdata(path, id_col):
     data = pd.read_csv(path, index_col=id_col)
     return data
+
+
+#
+def classChange(df):
+    df.loc[df['class'] == 1, 'class'] = 1
+    df.loc[df['class'] == 2, 'class'] = 1
+    df.loc[df['class'] == 3, 'class'] = 1
+    df.loc[df['class'] == 4, 'class'] = 3
+    df.loc[df['class'] == 5, 'class'] = 3
+    df.loc[df['class'] == 6, 'class'] = 2
+    df.loc[df['class'] == 7, 'class'] = 2
+    df.loc[df['class'] == 8, 'class'] = 2
+    df.loc[df['class'] == 9, 'class'] = 3
+    df.loc[df['class'] == 10, 'class'] = 3
+
+    df.to_csv('./file_3classes.csv')
+
+    return df
 
 
 # reads multiple csv files to one dataFrame
@@ -16,13 +35,14 @@ def readMultipleCSVdata(path):
     #     df = pd.read_csv(filename, index=filename, header=None)
     #     data.append(df)
 
-    #data = pd.concat((pd.read_csv(filename).assign(source=filename) for filename in data_files), ignore_index=True)
+    # data = pd.concat((pd.read_csv(filename).assign(source=filename) for filename in data_files), ignore_index=True)
     for filename in data_files:
         data = pd.read_csv(filename).assign(source=filename)
-        #data.set_index([pd.Index(data.index.values), 'source'])
+        # data.set_index([pd.Index(data.index.values), 'source'])
     return data
 
 
 class_data = readCSVdata('./IFMBE Scientific Challenge/files.csv', id_col=0)
+changed_class_data = classChange(class_data)
 param_data = readMultipleCSVdata('./IFMBE Scientific Challenge/Train2')
 print('done')
