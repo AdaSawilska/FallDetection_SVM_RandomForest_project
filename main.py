@@ -74,6 +74,45 @@ def readMultipleCSVdata(path):
         plt.show()
         print('ok')
 
+def find_features(path):
+    data_files = glob.glob(f'{path}/*.csv')
+    global_description_x = pd.df(data=[], index=[
+                               "count", "mean", "std", "min", "25%", "50%", "75%", "max"], columns=[])
+    global_description_y = pd.df(data=[], index=[
+                               "count", "mean", "std", "min", "25%", "50%", "75%", "max"], columns=[])
+    global_description_z = pd.df(data=[], index=[
+                               "count", "mean", "std", "min", "25%", "50%", "75%", "max"], columns=[])
+    for filename in data_files:
+        df = pd.read_csv(filename, names=['x', 'y', 'z', 'time'])
+        description_i = df.describe()
+        global_description_x[filename] = description_i["x"]
+        global_features_x = global_description_x.mean(axis=1)
+        
+        global_description_y[filename] = description_i["y"]
+        global_features_y = global_description_y.mean(axis=1)
+
+        global_description_z[filename] = description_i["z"]
+        global_features_z = global_description_z.mean(axis=1)
+
+    return global_features_x, global_features_y, global_features_z
+
+def normalize(signal, global_features_x, global_features_y, global_features_z):
+   
+    mean_x = float(global_features_x['mean'])
+    std_x = float(global_features_x['std'])
+    mean_y = float(global_features_y['mean'])
+    std_y = float(global_features_y['std'])
+    mean_z = float(global_features_z['mean'])
+    std_z = float(global_features_z['std'])
+    
+    normalised_signal= pd.df(columns = ["x","y","z"])
+    normalised_signal["x"]  = (signal["x"] - mean_x)/std_x
+     
+    normalised_signal["y"]  = (signal["y"] - mean_y)/std_y
+  
+    normalised_signal["z"]  = (signal["z"] - mean_z)/std_z
+    return normalised_signal
+
 
 
 if __name__ == '__main__':
