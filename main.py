@@ -271,5 +271,5 @@ if __name__ == '__main__':
     global_features_x, global_features_y, global_features_z = find_global_features(data_files)
     signals_parameters_df = preprocessing(data_files, global_features_x, global_features_y, global_features_z,
                                           class_data)
-    training(signals_parameters_df)
+    training(signals_parameters_df, 'linear')
     print('done')
