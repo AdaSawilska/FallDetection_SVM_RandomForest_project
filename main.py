@@ -9,7 +9,7 @@ import pandas as pd
 import glob
 import matplotlib.pyplot as plt
 from sklearn import svm
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.svm import SVC
 from sklearn.metrics import confusion_matrix, accuracy_score
 
@@ -66,14 +66,23 @@ def find_local_features(df, filename, signals_dataframe):
     signals_dataframe['mean_x'][filename] = description_i['x']['mean']
     signals_dataframe['std_x'][filename] = description_i['x']['std']
     signals_dataframe['min_x'][filename] = description_i['x']['min']
+    signals_dataframe['25%_x'][filename] = description_i['x']['25%']
+    signals_dataframe['50%_x'][filename] = description_i['x']['50%']
+    signals_dataframe['75%_x'][filename] = description_i['x']['75%']
     signals_dataframe['max_x'][filename] = description_i['x']['max']
     signals_dataframe['mean_y'][filename] = description_i['y']['mean']
     signals_dataframe['std_y'][filename] = description_i['y']['std']
     signals_dataframe['min_y'][filename] = description_i['y']['min']
+    signals_dataframe['25%_y'][filename] = description_i['y']['25%']
+    signals_dataframe['50%_y'][filename] = description_i['y']['50%']
+    signals_dataframe['75%_y'][filename] = description_i['y']['75%']
     signals_dataframe['max_y'][filename] = description_i['y']['max']
     signals_dataframe['mean_z'][filename] = description_i['z']['mean']
     signals_dataframe['std_z'][filename] = description_i['z']['std']
     signals_dataframe['min_z'][filename] = description_i['z']['min']
+    signals_dataframe['25%_z'][filename] = description_i['z']['25%']
+    signals_dataframe['50%_z'][filename] = description_i['z']['50%']
+    signals_dataframe['75%_z'][filename] = description_i['z']['75%']
     signals_dataframe['max_z'][filename] = description_i['z']['max']
 
     return signals_dataframe
@@ -132,8 +141,10 @@ def preprocessing(data_files, global_features_x, global_features_y, global_featu
 
     # create dataframe for statistical parameters of the signal
     signals = pd.DataFrame(data=[], index=[data_names],
-                           columns=["mean_x", "std_x", "min_x", "max_x", "mean_y", "std_y", "min_y", "max_y", "mean_z",
-                                    "std_z", "min_z", "max_z", "class"])
+                           columns=["mean_x", "std_x", "min_x", "max_x", "25%_x", "50%_x", "75%_x",
+                                    "mean_y", "std_y", "min_y", "max_y", "25%_y", "50%_y", "75%_y",
+                                    "mean_z", "std_z", "min_z", "max_z", "25%_z", "50%_z", "75%_z",
+                                    "class"])
     # data = []
     for filepath, filename in zip(data_files, data_names):
         df = pd.read_csv(filepath, names=['x', 'y', 'z', 'time'])
@@ -157,7 +168,6 @@ def preprocessing(data_files, global_features_x, global_features_y, global_featu
         # count parameters of each signals and save to dataframe
         signals = find_local_features(filtered_df, filename, signals)
         signals['class'][filename] = labels['class'][filename]
-
 
         # # plot raw signal
         # plt.plot(df['time'], df['x'], label='x')
@@ -194,29 +204,54 @@ def preprocessing(data_files, global_features_x, global_features_y, global_featu
     dataset = signals.drop('class', axis=1)
     scatter_matrix(dataset, figsize=(16, 9))
     plt.show()
+
+    fig = plt.figure(figsize=(8, 8))
+    plt.scatter(signals['std_x'], signals['std_z'], c=signals['class'])
+    plt.show()
     return signals
 
 
 # NOT WORKING YET
-def training(df):
-        Y = df['class']
-        X = df.drop('class', axis=1)
-        X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=25)
-        svc = SVC(kernel='linear')
-        svc.fit(X_train, y_train)
-        y_pred = svc.predict(X_test)
+def training(df, kernel):
+    Y = df['class']
+    X = df.drop('class', axis=1)
+    X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=25)
+
+    svm = SVC(kernel=kernel)
+
+    if kernel == 'rbf':
+        # finding best params for rbf kernel
+        param_grid = {'gamma': [0.005, 0.01, 0.1], 'C': [10, 15, 20, 25]}
+
+
+
+        # Perform grid search with cross-validation
+        grid_search = GridSearchCV(svm, param_grid, cv=5)
+        grid_search.fit(X_train, y_train)
+
+        # Print best parameter values and accuracy on validation set
+        print("Best gamma value: ", grid_search.best_params_['gamma'])
+        print("Best C value: ", grid_search.best_params_['C'])
+        y_pred = grid_search.predict(X_test)
+        accuracy = accuracy_score(y_test.values, y_pred)*100
+        confusion_mat = confusion_matrix(y_test.values, y_pred)
+        print("Validation accuracy: ", accuracy)
+        print("Confusion Matrix")
+        print(confusion_mat)
+
+    elif kernel == 'linear':
+        svm.fit(X_train, y_train)
+        y_pred = svm.predict(X_test)
 
         # Evaluating the accuracy of the model using the sklearn functions
-        accuracy = accuracy_score(y_test.values, y_pred) * 100
+        accuracy = accuracy_score(y_test.values, y_pred)*100
         confusion_mat = confusion_matrix(y_test.values, y_pred)
 
         # Printing the results
-        print("Accuracy for SVM is:", accuracy)
+        print("Validation accuracy:", accuracy)
         print("Confusion Matrix")
         print(confusion_mat)
-        print('svm')
-
-
+    print('svm')
 
 
 if __name__ == '__main__':
@@ -229,12 +264,12 @@ if __name__ == '__main__':
     # scatter_matrix(dataset, figsize=(16, 9))
     # plt.show()
 
-
     # changed_class_data = classChange(class_data)
 
     path = './IFMBE Scientific Challenge/Train2'
     data_files = glob.glob(f'{path}/*.csv')
     global_features_x, global_features_y, global_features_z = find_global_features(data_files)
-    signals_parameters_df = preprocessing(data_files, global_features_x, global_features_y, global_features_z, class_data)
+    signals_parameters_df = preprocessing(data_files, global_features_x, global_features_y, global_features_z,
+                                          class_data)
     training(signals_parameters_df)
     print('done')
