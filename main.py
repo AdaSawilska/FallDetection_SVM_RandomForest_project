@@ -105,15 +105,15 @@ def normalize(data, global_features_x, global_features_y, global_features_z):
 
 
 # filter signal
-def filter(order, fs, cutoff):
+def filter(order, fs, cutoff, type):
     nyq = 0.5 * fs
     normal_cutoff = cutoff / nyq
-    b, a = signal.butter(order, normal_cutoff, btype='high', analog=False)
+    b, a = signal.butter(order, normal_cutoff, btype=type, analog=False)
     return b, a
 
 
-def signal_filtration(data, order, fs, cutoff):
-    b, a = filter(order, fs, cutoff)
+def signal_filtration(data, order, fs, cutoff, type):
+    b, a = filter(order, fs, cutoff, type)
     filtered_signal = pd.DataFrame(columns=["x", "y", "z", "time"])
     filtered_signal["x"] = signal.filtfilt(b, a, data['x'])
     filtered_signal["y"] = signal.filtfilt(b, a, data['y'])
@@ -122,8 +122,8 @@ def signal_filtration(data, order, fs, cutoff):
 
 
 def signal_spectometer(data, timeStep):
-    yf = fft(data)
-    xf = fftfreq(len(data), d=timeStep)
+    yf = fft(data.values)
+    xf = fftfreq(len(data.values), d=timeStep)
 
     plt.plot(xf, np.abs(yf))
     plt.xlabel('frequency Hz')
@@ -160,10 +160,16 @@ def preprocessing(data_files, global_features_x, global_features_y, global_featu
 
         # filter parameters
         order = 5
-        cutoff = 2
+        cutoff_high = 2
+        cutoff_low = 49
+
+        # # plot a power spectrum of the signal
+        # signal_spectometer(normalized_df['x'], timeStep)
+
 
         # signal filtration
-        filtered_df = signal_filtration(normalized_df, order, fs, cutoff)
+        filtered_df = signal_filtration(normalized_df, order, fs, cutoff_high, 'high')
+        filtered_df = signal_filtration(filtered_df, order, fs, cutoff_low, 'low')
 
         # count parameters of each signals and save to dataframe
         signals = find_local_features(filtered_df, filename, signals)
@@ -271,5 +277,5 @@ if __name__ == '__main__':
     global_features_x, global_features_y, global_features_z = find_global_features(data_files)
     signals_parameters_df = preprocessing(data_files, global_features_x, global_features_y, global_features_z,
                                           class_data)
-    training(signals_parameters_df, 'linear')
+    training(signals_parameters_df, 'rbf')
     print('done')
