@@ -8,4 +8,4 @@ CON’23). The dataset consists of accelerometer data from 16 young subjects per
 ities of daily living (ADL) and 3 types of simulated falls. The subjects were wearing an inertial
 sensor unit (Shimmer sensing, Ireland) attached to their waist to record the activities.
 
-The data is taken from a website: https://sci-challenge.ifmbe.org/
+The data is taken from a website of the [Sci-challenge]( https://sci-challenge.ifmbe.org/):
